@@ -1,0 +1,55 @@
+name: Build IPA
+
+# Builds TheosAuthDemo on a free GitHub-hosted macOS runner and uploads an
+# unsigned .ipa you can download and sideload (TrollStore / AltStore / dev cert).
+#
+# Trigger: push to main/master, or run manually from the Actions tab
+# ("Run workflow"). The .ipa appears under the run's "Artifacts".
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools (ldid, GNU make, xz)
+        run: brew install ldid make xz
+
+      - name: Set up Theos
+        run: |
+          git clone --quiet --recursive https://github.com/theos/theos.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          # On macOS, Theos uses Xcode's bundled iPhoneOS SDK — no theos/sdks needed.
+
+      - name: Build .app bundle
+        working-directory: Theos
+        run: |
+          set -eux
+          # arm64-only keeps sideloading (AltStore/TrollStore) maximally compatible.
+          gmake clean || true
+          gmake stage FINALPACKAGE=1 ARCHS=arm64
+          ls -R .theos/_/
+
+      - name: Package unsigned .ipa
+        working-directory: Theos
+        run: |
+          set -eux
+          APP=$(find .theos/_ -maxdepth 4 -name '*.app' -type d | head -1)
+          test -n "$APP"
+          rm -rf payload_build && mkdir -p payload_build/Payload
+          cp -R "$APP" payload_build/Payload/
+          (cd payload_build && zip -qry ../TheosAuthDemo.ipa Payload)
+          ls -la TheosAuthDemo.ipa
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheosAuthDemo-ipa
+          path: Theos/TheosAuthDemo.ipa
+          if-no-files-found: error

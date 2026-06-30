@@ -1,0 +1,15 @@
+# Theos build output
+Theos/.theos/
+Theos/packages/
+Theos/payload_build/
+*.ipa
+*.deb
+
+# Backend local/dev
+*.sqlite
+*.sqlite-journal
+*.log
+
+# OS / editor cruft
+.DS_Store
+*.swp

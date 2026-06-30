@@ -1,0 +1,41 @@
+# .htaccess — TheosAuthDemo API
+# Apache 2.4+. Adjust for nginx as needed (see README).
+
+RewriteEngine On
+
+# ---------------------------------------------------------------------------
+# Force HTTPS. The app refuses cleartext (ATS), so this is belt-and-braces.
+# ---------------------------------------------------------------------------
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Pass the Authorization header through to PHP (some FCGI setups strip it).
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# ---------------------------------------------------------------------------
+# Block direct web access to internal includes — only the endpoints below
+# (register/login/verify/logout) should be reachable.
+# ---------------------------------------------------------------------------
+<FilesMatch "^(config|db|crypto|jwt|middleware)\.php$">
+    Require all denied
+</FilesMatch>
+
+# Block source / data files just in case.
+<FilesMatch "\.(sql|md|log)$">
+    Require all denied
+</FilesMatch>
+
+# No directory listings.
+Options -Indexes
+
+# ---------------------------------------------------------------------------
+# Conservative security headers.
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>

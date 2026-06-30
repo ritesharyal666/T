@@ -1,0 +1,9 @@
+Package: com.tweak.theosauthdemo
+Name: TheosAuthDemo
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: AES-encrypted + JWT authentication demo (UIKit / Objective-C).
+Maintainer: ctrlbits
+Author: ctrlbits
+Section: Applications
+Depends: firmware (>= 14.0)
